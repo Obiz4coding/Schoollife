@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Student Life</string>
+    <string name="sign_in_tagline">From JSS1 Tuck Shop to Professorial Chair — survive Nigerian school wahala, hustle smart, and make the Hall of Fame.</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="signing_in">Entering Campus Gate…</string>
+    <string name="nav_play">Campus</string>
+    <string name="nav_lives">My Lives</string>
+    <string name="nav_hall_of_fame">Hall of Fame</string>
+    <string name="new_character">Start New Life</string>
+    <string name="shop_title">Campus Market &amp; Upgrades</string>
+    <string name="diary_title">Campus Diary</string>
+</resources>

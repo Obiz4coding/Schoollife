@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.bestCareerTitle is string && data.bestCareerTitle.size() <= 80 &&
+             data.highestNetWorth is int && data.highestNetWorth >= -1000000 && data.highestNetWorth <= 1000000000 &&
+             data.highestStage in ['SECONDARY', 'UNIVERSITY', 'POSTGRADUATE', 'LECTURER', 'PROFESSOR'] &&
+             data.totalGraduations is int && data.totalGraduations >= 0 && data.totalGraduations <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCareer(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.characterName is string && data.characterName.size() >= 1 && data.characterName.size() <= 40 &&
+             data.gender in ['MALE', 'FEMALE'] &&
+             data.schoolName is string && data.schoolName.size() >= 1 && data.schoolName.size() <= 60 &&
+             data.archetype in ['AJEBO', 'STRUGGLE', 'HUSTLER'] &&
+             data.stage in ['SECONDARY', 'UNIVERSITY', 'POSTGRADUATE', 'LECTURER'] &&
+             data.levelLabel is string && data.levelLabel.size() >= 1 && data.levelLabel.size() <= 40 &&
+             data.day is int && data.day >= 1 && data.day <= 31 &&
+             data.totalDays is int && data.totalDays >= 1 && data.totalDays <= 500 &&
+             data.money is int && data.money >= -1000000 && data.money <= 1000000000 &&
+             data.energy is int && data.energy >= 0 && data.energy <= 100 &&
+             data.hunger is int && data.hunger >= 0 && data.hunger <= 100 &&
+             data.academicStat is number && data.academicStat >= 0 && data.academicStat <= 100 &&
+             data.socialStat is int && data.socialStat >= 0 && data.socialStat <= 100 &&
+             data.riskHeat is int && data.riskHeat >= 0 && data.riskHeat <= 100 &&
+             data.careerStatus in ['ACTIVE', 'GRADUATED', 'EXPELLED', 'DROPPED_OUT', 'RETIRED_PROF'] &&
+             data.carryoverCount is int && data.carryoverCount >= 0 && data.carryoverCount <= 50 &&
+             data.strikeDaysLeft is int && data.strikeDaysLeft >= 0 && data.strikeDaysLeft <= 30 &&
+             data.accommodation in ['PARENTS_HOUSE', 'HOSTEL', 'LODGE', 'STAFF_QUARTERS'] &&
+             data.affiliation in ['NONE', 'JET_CLUB', 'PRESS_CLUB', 'FOOTBALL', 'FELLOWSHIP', 'SUG', 'CULT'] &&
+             data.itemsOwned is list && data.itemsOwned.size() <= 10 &&
+             (data.itemsOwned.size() == 0 || data.itemsOwned[0] is string) &&
+             data.completedStages is list && data.completedStages.size() <= 4 &&
+             (data.completedStages.size() == 0 || data.completedStages[0] is string) &&
+             data.lastLogSummary is string && data.lastLogSummary.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.characterName is string && data.characterName.size() >= 1 && data.characterName.size() <= 40 &&
+             data.schoolName is string && data.schoolName.size() >= 1 && data.schoolName.size() <= 60 &&
+             data.stageReached in ['SECONDARY', 'UNIVERSITY', 'POSTGRADUATE', 'LECTURER', 'PROFESSOR'] &&
+             data.careerTitle is string && data.careerTitle.size() >= 1 && data.careerTitle.size() <= 80 &&
+             data.score is int && data.score >= 0 && data.score <= 100000000 &&
+             data.netWorth is int && data.netWorth >= -1000000 && data.netWorth <= 1000000000 &&
+             data.cgpaDisplay is string && data.cgpaDisplay.size() >= 1 && data.cgpaDisplay.size() <= 30 &&
+             data.visibility == 'PUBLIC' &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) && isValidId(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'bestCareerTitle', 'highestNetWorth',
+                         'highestStage', 'totalGraduations', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'bestCareerTitle', 'highestNetWorth',
+                         'highestStage', 'totalGraduations', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'bestCareerTitle', 'highestNetWorth',
+                         'highestStage', 'totalGraduations', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /careers/{careerId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(careerId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(careerId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'characterName', 'gender', 'schoolName', 'archetype',
+                           'stage', 'levelLabel', 'day', 'totalDays', 'money', 'energy',
+                           'hunger', 'academicStat', 'socialStat', 'riskHeat', 'careerStatus',
+                           'carryoverCount', 'strikeDaysLeft', 'accommodation', 'affiliation',
+                           'itemsOwned', 'completedStages', 'lastLogSummary', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'characterName', 'gender', 'schoolName', 'archetype',
+                           'stage', 'levelLabel', 'day', 'totalDays', 'money', 'energy',
+                           'hunger', 'academicStat', 'socialStat', 'riskHeat', 'careerStatus',
+                           'carryoverCount', 'strikeDaysLeft', 'accommodation', 'affiliation',
+                           'itemsOwned', 'completedStages', 'lastLogSummary', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidCareer(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(careerId) &&
+                         isValidCareer(incoming()) &&
+                         existing().careerStatus == 'ACTIVE' &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'schoolName', 'stage', 'levelLabel', 'day', 'totalDays',
+                           'money', 'energy', 'hunger', 'academicStat', 'socialStat',
+                           'riskHeat', 'careerStatus', 'carryoverCount', 'strikeDaysLeft',
+                           'accommodation', 'affiliation', 'itemsOwned', 'completedStages',
+                           'lastLogSummary', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(careerId);
+      }
+    }
+
+    match /leaderboard/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && resource.data.visibility == 'PUBLIC';
+      allow list: if isSignedIn() && resource.data.visibility == 'PUBLIC';
+
+      allow create: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       entryId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'characterName', 'schoolName', 'stageReached',
+                         'careerTitle', 'score', 'netWorth', 'cgpaDisplay',
+                         'visibility', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'characterName', 'schoolName', 'stageReached',
+                         'careerTitle', 'score', 'netWorth', 'cgpaDisplay',
+                         'visibility', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidLeaderboardEntry(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       entryId == request.auth.uid &&
+                       existing().userId == request.auth.uid &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidLeaderboardEntry(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'characterName', 'schoolName', 'stageReached', 'careerTitle',
+                         'score', 'netWorth', 'cgpaDisplay', 'visibility', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(entryId) && existing().userId == request.auth.uid;
+    }
+  }
+}

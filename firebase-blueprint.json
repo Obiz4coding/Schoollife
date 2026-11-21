@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Player profile summary and highest achievements across Student Life runs.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Authenticated Firebase UID" },
+        "displayName": { "type": "string", "description": "Player display name" },
+        "bestCareerTitle": { "type": "string", "description": "Highest title earned across runs" },
+        "highestNetWorth": { "type": "integer", "description": "Highest Naira balance achieved" },
+        "highestStage": {
+          "type": "string",
+          "enum": ["SECONDARY", "UNIVERSITY", "POSTGRADUATE", "LECTURER", "PROFESSOR"],
+          "description": "Furthest academic/career stage reached"
+        },
+        "totalGraduations": { "type": "integer", "description": "Number of completed graduations/promotions" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "displayName", "bestCareerTitle", "highestNetWorth", "highestStage", "totalGraduations", "createdAt", "updatedAt"]
+    },
+    "StudentCareer": {
+      "title": "StudentCareer",
+      "description": "Full simulation state for a Student Life character run across Secondary, University, Postgraduate, and Lecturer stages.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "characterName": { "type": "string", "description": "Student character name" },
+        "gender": { "type": "string", "enum": ["MALE", "FEMALE"] },
+        "schoolName": { "type": "string", "description": "Current Nigerian school or university" },
+        "archetype": { "type": "string", "enum": ["AJEBO", "STRUGGLE", "HUSTLER"] },
+        "stage": { "type": "string", "enum": ["SECONDARY", "UNIVERSITY", "POSTGRADUATE", "LECTURER"] },
+        "levelLabel": { "type": "string", "description": "e.g., JSS 1, 200 Level, M.Sc Year 1, Senior Lecturer" },
+        "day": { "type": "integer", "description": "Current day in stage (1-30)" },
+        "totalDays": { "type": "integer", "description": "Cumulative days lived across stages" },
+        "money": { "type": "integer", "description": "Balance in Nigerian Naira" },
+        "energy": { "type": "integer", "description": "Energy 0-100" },
+        "hunger": { "type": "integer", "description": "Fullness/Hunger 0-100 (0 = starving)" },
+        "academicStat": { "type": "number", "description": "Grades %, CGPA 0-5, Research %, or Promotion Pts" },
+        "socialStat": { "type": "integer", "description": "Social Life, Mental Health, or Student Respect 0-100" },
+        "riskHeat": { "type": "integer", "description": "Disciplinary / EFCC / Senate risk 0-100" },
+        "careerStatus": { "type": "string", "enum": ["ACTIVE", "GRADUATED", "EXPELLED", "DROPPED_OUT", "RETIRED_PROF"] },
+        "carryoverCount": { "type": "integer", "description": "Number of carryovers" },
+        "strikeDaysLeft": { "type": "integer", "description": "Remaining ASUU strike days" },
+        "accommodation": { "type": "string", "enum": ["PARENTS_HOUSE", "HOSTEL", "LODGE", "STAFF_QUARTERS"] },
+        "affiliation": { "type": "string", "enum": ["NONE", "JET_CLUB", "PRESS_CLUB", "FOOTBALL", "FELLOWSHIP", "SUG", "CULT"] },
+        "itemsOwned": { "type": "array", "description": "Owned campus gear and upgrades (max 10)" },
+        "completedStages": { "type": "array", "description": "Completed stage names (max 4)" },
+        "lastLogSummary": { "type": "string", "description": "Latest campus diary summary" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": [
+        "userId", "characterName", "gender", "schoolName", "archetype", "stage",
+        "levelLabel", "day", "totalDays", "money", "energy", "hunger",
+        "academicStat", "socialStat", "riskHeat", "careerStatus",
+        "carryoverCount", "strikeDaysLeft", "accommodation", "affiliation",
+        "itemsOwned", "completedStages", "lastLogSummary", "createdAt", "updatedAt"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Public Campus Hall of Fame entry representing a user's top Student Life run.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "characterName": { "type": "string", "description": "Character display name" },
+        "schoolName": { "type": "string", "description": "School or university name" },
+        "stageReached": { "type": "string", "enum": ["SECONDARY", "UNIVERSITY", "POSTGRADUATE", "LECTURER", "PROFESSOR"] },
+        "careerTitle": { "type": "string", "description": "e.g., First Class Graduate, Dr., Professor" },
+        "score": { "type": "integer", "description": "Hall of Fame composite score" },
+        "netWorth": { "type": "integer", "description": "Naira balance at record" },
+        "cgpaDisplay": { "type": "string", "description": "Formatted academic standing" },
+        "visibility": { "type": "string", "enum": ["PUBLIC"] },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "characterName", "schoolName", "stageReached", "careerTitle", "score", "netWorth", "cgpaDisplay", "visibility", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Player profile owned by userId"
+    },
+    "/users/{userId}/careers/{careerId}": {
+      "schema": { "$ref": "#/entities/StudentCareer" },
+      "description": "User-scoped Student Life character simulation runs"
+    },
+    "/leaderboard/{entryId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "Public Campus Hall of Fame leaderboard entries (entryId == userId)"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Student Life",
+  "description": "A Nigerian student life simulation game where one character can progress from Secondary School through University, Postgraduate, and Lecturer careers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
